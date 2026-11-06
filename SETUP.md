@@ -50,14 +50,23 @@ You need to do steps 2 and 3 within about 10 minutes of each other.
 
    Copy everything after `code=`. That's your **authorization code**. It only works once.
 
-3. Open **Terminal** (Mac) or **PowerShell** (Windows), and run the matching command, filling in your three values.
+3. Open **Terminal** (Mac) or **PowerShell** (Windows), and run the command below, filling in your three values (keep the quotes).
 
-   **Mac (Terminal):**
+   The `redirect_uri` must match **exactly** what was in your address bar before `?code=`. If yours looked different (for example, a slash after `callback`), use what you saw.
+
+   **Mac (Terminal):** paste all five lines at once.
    ```
-   curl -s -X POST https://accounts.spotify.com/api/token -u "CLIENT_ID:CLIENT_SECRET" -d grant_type=authorization_code -d code=AUTH_CODE -d redirect_uri=http://127.0.0.1:8888/callback
+   curl -s -X POST https://accounts.spotify.com/api/token \
+     -u "CLIENT_ID:CLIENT_SECRET" \
+     --data-urlencode "grant_type=authorization_code" \
+     --data-urlencode "code=AUTH_CODE" \
+     --data-urlencode "redirect_uri=http://127.0.0.1:8888/callback"
    ```
 
-   **Windows (PowerShell):** same thing, but type `curl.exe` instead of `curl`.
+   **Windows (PowerShell):** one line, using `curl.exe`:
+   ```
+   curl.exe -s -X POST https://accounts.spotify.com/api/token -u "CLIENT_ID:CLIENT_SECRET" --data-urlencode "grant_type=authorization_code" --data-urlencode "code=AUTH_CODE" --data-urlencode "redirect_uri=http://127.0.0.1:8888/callback"
+   ```
 
 4. The reply looks like:
 
@@ -67,7 +76,11 @@ You need to do steps 2 and 3 within about 10 minutes of each other.
 
    Copy the value of **refresh_token** (between the quotes, without the quotes). That's your **Refresh Token**. It keeps working, so you only do this once.
 
-   If you see `invalid_grant`, the code was already used or expired. Go back to step 1.
+   If you see `invalid_grant`:
+   - **"Invalid redirect URI"**: the `redirect_uri` in the command doesn't exactly match the one in your address bar or in the app's Settings (watch for a trailing slash, `https` vs `http`, or `localhost` instead of `127.0.0.1`).
+   - **"Invalid authorization code"**: the code was already used (even by a failed attempt) or expired.
+
+   Either way, fix the cause, then go back to step 1 for a fresh code.
 
 ## E. Save the three secrets in GitHub
 
