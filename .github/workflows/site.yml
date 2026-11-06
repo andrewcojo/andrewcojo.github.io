@@ -1,0 +1,71 @@
+# Updates the playlist data and publishes the site to GitHub Pages.
+# Runs every night, whenever you push a change, and when you click "Run workflow".
+name: Update playlist & publish site
+
+on:
+  schedule:
+    - cron: "17 8 * * *"        # every day at 08:17 UTC (3:17 AM Eastern in winter, 4:17 AM in summer)
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Update even if lots of songs disappeared (only if you really removed them)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write     # to save the updated playlist.json back to the repo
+  pages: write        # to publish
+  id-token: write     # required by GitHub Pages
+
+concurrency:
+  group: site
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Pull the Spotify playlist
+        env:
+          SPOTIFY_CLIENT_ID: ${{ secrets.SPOTIFY_CLIENT_ID }}
+          SPOTIFY_CLIENT_SECRET: ${{ secrets.SPOTIFY_CLIENT_SECRET }}
+          SPOTIFY_REFRESH_TOKEN: ${{ secrets.SPOTIFY_REFRESH_TOKEN }}
+          FORCE: ${{ inputs.force && '1' || '' }}
+        run: node scripts/update-playlist.mjs
+
+      - name: Save changes to the repo
+        run: |
+          if git diff --quiet -- data/playlist.json; then
+            echo "Playlist unchanged."
+          else
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add data/playlist.json
+            git commit -m "Update playlist from Spotify"
+            git push
+          fi
+
+      - name: Collect the site files
+        run: |
+          mkdir _site
+          rsync -a --exclude '_site' --exclude '.git' --exclude '.github' --exclude 'scripts' \
+                --exclude 'README.md' --exclude 'SETUP.md' ./ _site/
+
+      - uses: actions/configure-pages@v6
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5
