@@ -161,3 +161,10 @@ button[disabled]{opacity:.6;cursor:wait}
   .cover .tile{font-size:14px;padding:10px}
   .meta .t{font-size:13px}.meta .a{font-size:12px}
 }
+
+/* "Spotify app didn't open?" bar (desktop) */
+.app-bar{position:fixed;left:50%;bottom:24px;transform:translate(-50%,20px);opacity:0;pointer-events:none;z-index:90;display:flex;align-items:center;gap:16px;background:var(--ink);color:var(--bg);padding:12px 12px 12px 20px;border-radius:999px;font-size:14px;box-shadow:0 10px 30px rgba(0,0,0,.4);transition:opacity .2s,transform .2s;white-space:nowrap}
+.app-bar.show{opacity:1;transform:translate(-50%,0);pointer-events:auto}
+.app-bar a{font-weight:600;text-decoration:underline;text-underline-offset:3px}
+.app-bar button{background:none;border:0;color:inherit;font-size:20px;line-height:1;cursor:pointer;padding:2px 8px;opacity:.6}
+.app-bar button:hover{opacity:1}

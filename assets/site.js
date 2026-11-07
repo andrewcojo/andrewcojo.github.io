@@ -126,3 +126,46 @@ if (form) form.addEventListener('submit', async e => {
     btn.disabled = false;
   }
 });
+
+// Desktop: open Spotify links in the Spotify app instead of the web player.
+// Phones already hand open.spotify.com links to the app, so this only runs on computers.
+// If the app doesn't take over within ~2 seconds, offer the web player instead.
+(function () {
+  const ua = navigator.userAgent;
+  const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(ua) || (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua));
+  const isFirefox = /Firefox\//.test(ua);            // Firefox shows an error page for unknown app links
+  if (isMobile || isFirefox) return;
+
+  let bar;
+  function offerWeb(url) {
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.className = 'app-bar';
+      bar.setAttribute('role', 'status');
+      document.body.appendChild(bar);
+    }
+    bar.innerHTML = `<span>Spotify app didn't open?</span><a href="${url}" target="_blank" rel="noopener">Listen in your browser</a><button type="button" aria-label="Close">×</button>`;
+    bar.querySelector('button').onclick = () => bar.classList.remove('show');
+    bar.querySelector('a').onclick = () => bar.classList.remove('show');
+    requestAnimationFrame(() => bar.classList.add('show'));
+    clearTimeout(bar._t); bar._t = setTimeout(() => bar.classList.remove('show'), 9000);
+  }
+
+  document.addEventListener('click', e => {
+    const a = e.target.closest('a[href^="https://open.spotify.com/"]');
+    if (!a || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const m = new URL(a.href).pathname.match(/^\/(track|album|playlist|artist)\/([A-Za-z0-9]+)/);
+    if (!m) return;
+    e.preventDefault();
+    let left = false;
+    const mark = () => { left = true; };
+    window.addEventListener('blur', mark, { once: true });
+    document.addEventListener('visibilitychange', mark, { once: true });
+    location.href = `spotify:${m[1]}:${m[2]}`;
+    setTimeout(() => {
+      window.removeEventListener('blur', mark);
+      document.removeEventListener('visibilitychange', mark);
+      if (!left && document.hasFocus()) offerWeb(a.href);
+    }, 2000);
+  });
+})();
